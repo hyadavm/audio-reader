@@ -6,134 +6,66 @@ import {
 
 function Signup() {
 
-  const navigate =
-    useNavigate();
+  const navigate = useNavigate();
 
-  const [name, setName] =
-    useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
 
-  const [email, setEmail] =
-    useState("");
+  const handleSignup = async () => {
 
-  const [password, setPassword] =
-    useState("");
+    if (!name || !email || !password || !confirmPassword) {
+      alert("Fill all fields");
+      return;
+    }
 
-  const [showPassword, setShowPassword] =
-    useState(false);
+    if (password !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
 
-  const [
-    confirmPassword,
-    setConfirmPassword,
-  ] = useState("");
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters");
+      return;
+    }
 
-  const [message, setMessage] =
-  useState("");
+    // ✅ Save to localStorage first (normalized email)
+    const normalizedEmail = email.trim().toLowerCase();
 
-  const handleSignup =
-    async () => {
+    localStorage.setItem("email", normalizedEmail);
+    localStorage.setItem("password", password);
+    localStorage.setItem("name", name.trim());
+    localStorage.setItem("token", "logged-in");
 
-      if (
-        !name ||
-        !email ||
-        !password ||
-        !confirmPassword
-      ) {
+    // ✅ Fire API in background (don't block signup on it)
+    try {
+      await fetch(
+        "https://k7p23bz1zd.execute-api.ap-south-1.amazonaws.com/prod/",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "signup",
+            name: name.trim(),
+            email: normalizedEmail,
+            password,
+          }),
+        }
+      );
+    } catch (error) {
+      console.error("API signup error (non-blocking):", error);
+    }
 
-        alert("Fill all fields");
+    setMessage("Signup successful ✅");
 
-        return;
+    setTimeout(() => {
+      navigate("/converter");
+    }, 1500);
 
-      }
-
-      if (
-        password !==
-        confirmPassword
-      ) {
-
-        alert(
-          "Passwords do not match"
-        );
-
-        return;
-
-      }
-
-      if (
-        password.length < 6
-      ) {
-
-        alert(
-          "Password must be at least 6 characters"
-        );
-
-        return;
-
-      }
-
-      try {
-
-        const response =
-          await fetch(
-            "https://k7p23bz1zd.execute-api.ap-south-1.amazonaws.com/prod/",
-            {
-
-              method: "POST",
-
-              headers: {
-                "Content-Type":
-                  "application/json",
-              },
-
-              body: JSON.stringify({
-
-                action:
-                  "signup",
-
-                name,
-
-                email,
-
-                password,
-
-              }),
-
-            }
-          );
-
-        await response.json();
-
-        setMessage(
-          "Signup successful ✅"
-        );
-
-        localStorage.setItem(
-          "email",
-          email
-        );
-
-        localStorage.setItem(
-          "password",
-          password
-        );
-        
-        localStorage.setItem(
-          "name",
-          name
-        );
-
-        setTimeout(() => {
-
-          navigate("/converter");
-        
-        }, 1500);
-
-      } catch (error) {
-
-        alert("Signup failed");
-
-      }
-
-    };
+  };
 
   return (
     <div style={styles.root}>
@@ -192,11 +124,7 @@ function Signup() {
               placeholder="Your name"
               style={styles.input}
               value={name}
-              onChange={(e) =>
-                setName(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setName(e.target.value)}
             />
 
           </div>
@@ -212,11 +140,7 @@ function Signup() {
               placeholder="you@example.com"
               style={styles.input}
               value={email}
-              onChange={(e) =>
-                setEmail(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setEmail(e.target.value)}
             />
 
           </div>
@@ -227,47 +151,28 @@ function Signup() {
               Password
             </label>
 
-            <div style={{
-              position: "relative",
-            }}>
+            <div style={{ position: "relative" }}>
 
               <input
-                type={
-                  showPassword
-                    ? "text"
-                    : "password"
-                }
+                type={showPassword ? "text" : "password"}
                 autoComplete="new-password"
-                placeholder="Min. 8 characters"
+                placeholder="Min. 6 characters"
                 style={styles.input}
                 value={password}
-                onChange={(e) =>
-                  setPassword(
-                    e.target.value
-                  )
-                }
+                onChange={(e) => setPassword(e.target.value)}
               />
 
               <span
-                onClick={() =>
-                  setShowPassword(
-                    !showPassword
-                  )
-                }
+                onClick={() => setShowPassword(!showPassword)}
                 style={{
-                  position:
-                    "absolute",
+                  position: "absolute",
                   right: 12,
                   top: 16,
                   cursor: "pointer",
                   fontSize: 12,
                 }}
               >
-
-                {showPassword
-                  ? "Hide"
-                  : "Show"}
-
+                {showPassword ? "Hide" : "Show"}
               </span>
 
             </div>
@@ -285,24 +190,16 @@ function Signup() {
               placeholder="Confirm password"
               style={styles.input}
               value={confirmPassword}
-              onChange={(e) =>
-                setConfirmPassword(
-                  e.target.value
-                )
-              }
+              onChange={(e) => setConfirmPassword(e.target.value)}
             />
 
           </div>
-          
+
           {message && (
-
-<p style={styles.message}>
-
-  {message}
-
-</p>
-
-)}
+            <p style={styles.message}>
+              {message}
+            </p>
+          )}
 
           <button
             style={styles.submit}
@@ -313,14 +210,9 @@ function Signup() {
 
           <p style={styles.footer}>
             Already have an account?{" "}
-
-            <Link
-              to="/login"
-              style={styles.link}
-            >
+            <Link to="/login" style={styles.link}>
               Sign in
             </Link>
-
           </p>
 
         </div>
@@ -331,14 +223,12 @@ function Signup() {
   );
 }
 
-const styles:
-Record<string, React.CSSProperties> = {
+const styles: Record<string, React.CSSProperties> = {
 
   root: {
     display: "flex",
     minHeight: "100vh",
-    fontFamily:
-      "'DM Sans', sans-serif",
+    fontFamily: "'DM Sans', sans-serif",
   },
 
   left: {
@@ -354,8 +244,7 @@ Record<string, React.CSSProperties> = {
   },
 
   brand: {
-    fontFamily:
-      "'Instrument Serif', serif",
+    fontFamily: "'Instrument Serif', serif",
     fontSize: 32,
     color: "#fefefe",
     fontWeight: 400,
@@ -372,7 +261,7 @@ Record<string, React.CSSProperties> = {
     maxWidth: 260,
     lineHeight: "1.7",
   },
-  
+
   message: {
     background: "#e8f7ee",
     color: "#1e7a46",
@@ -390,10 +279,8 @@ Record<string, React.CSSProperties> = {
   },
 
   leftItem: {
-    background:
-      "rgba(255,255,255,0.06)",
-    border:
-      "1px solid rgba(255,255,255,0.08)",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.08)",
     padding: "16px 20px",
     borderRadius: 14,
     color: "#fefefe",
@@ -418,8 +305,7 @@ Record<string, React.CSSProperties> = {
   },
 
   title: {
-    fontFamily:
-      "'Instrument Serif', serif",
+    fontFamily: "'Instrument Serif', serif",
     fontSize: 42,
     color: "#1a1a1a",
     fontWeight: 400,
@@ -450,12 +336,10 @@ Record<string, React.CSSProperties> = {
     width: "100%",
     padding: "16px 18px",
     borderRadius: 10,
-    border:
-      "0.5px solid #e0dbd2",
+    border: "0.5px solid #e0dbd2",
     background: "#faf9f6",
     fontSize: 15,
-    fontFamily:
-      "'DM Sans', sans-serif",
+    fontFamily: "'DM Sans', sans-serif",
     color: "#1a1a1a",
     outline: "none",
     boxSizing: "border-box",
@@ -469,8 +353,7 @@ Record<string, React.CSSProperties> = {
     color: "#fff",
     border: "none",
     fontSize: 15,
-    fontFamily:
-      "'DM Sans', sans-serif",
+    fontFamily: "'DM Sans', sans-serif",
     fontWeight: 500,
     cursor: "pointer",
     marginTop: 10,

@@ -48,7 +48,6 @@ function pickVoice(
     voices.find((v) => v.lang === lang && v.name.toLowerCase().startsWith("google")) ??
     voices.find((v) => v.lang === lang && !v.localService) ??
     voices.find((v) => v.lang === lang) ??
-    // Fallback: match language prefix (e.g. en-IE → any en-*)
     voices.find((v) => v.lang.startsWith(lang.split("-")[0]))
   );
 }
@@ -64,7 +63,7 @@ function Converter() {
   const [selectedVoice, setSelectedVoice] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
-  const userName =localStorage.getItem("name");
+  const userName = localStorage.getItem("name");
   const [voicesReady, setVoicesReady] = useState(cachedVoices.length > 0);
 
   const audioReady = status === "ready";
@@ -181,21 +180,31 @@ function Converter() {
   };
 
   // DOWNLOAD
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!audioUrl) return;
-    const a = document.createElement("a");
-    a.href = audioUrl;
-    a.download = "audio.mp3";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setDlState("done");
-    setTimeout(() => {
+
+    try {
+      const response = await fetch(audioUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = "audio.mp3";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(blobUrl);
+      setDlState("done");
+      setTimeout(() => setDlState("idle"), 2000);
+    } catch (error) {
+      console.error("Download failed:", error);
       setDlState("idle");
-    }, 2000);
+    }
   };
 
-  // LOGOUT
+  // LOGOUT ✅ fixed - no longer removes name
   const handleLogout = () => {
     localStorage.removeItem("token");
     sessionStorage.clear();
@@ -214,20 +223,13 @@ function Converter() {
 
         <div style={styles.navRight}>
           <div style={styles.userBox}>
-
-  <div style={styles.avatar}>
-
-    {userName?.charAt(0)}
-
-  </div>
-
-  <span style={styles.userName}>
-
-    {userName}
-
-  </span>
-
-</div>
+            <div style={styles.avatar}>
+              {userName?.charAt(0).toUpperCase()}
+            </div>
+            <span style={styles.userName}>
+              {userName}
+            </span>
+          </div>
           <button onClick={handleLogout} style={styles.logoutBtn}>
             Logout
           </button>
@@ -307,8 +309,7 @@ function Converter() {
             style={{
               ...styles.convertBtn,
               opacity: status === "loading" || !text.trim() ? 0.6 : 1,
-              cursor:
-                status === "loading" || !text.trim() ? "not-allowed" : "pointer",
+              cursor: status === "loading" || !text.trim() ? "not-allowed" : "pointer",
             }}
           >
             {status === "loading" ? "Generating…" : "Convert to Audio"}
@@ -338,13 +339,11 @@ function Converter() {
 }
 
 const styles: Record<string, React.CSSProperties> = {
-
   root: {
     minHeight: "100vh",
     background: "#f7f5f0",
     fontFamily: "'DM Sans', sans-serif",
   },
-
   nav: {
     display: "flex",
     justifyContent: "space-between",
@@ -353,30 +352,20 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#fefefe",
     borderBottom: "0.5px solid #e8e4dc",
   },
-
   logo: {
     fontFamily: "'Instrument Serif', serif",
     fontSize: 22,
     color: "#1a1a1a",
     fontWeight: 400,
   },
-
   logoAccent: {
     color: "#c4622d",
   },
-
   navRight: {
     display: "flex",
     alignItems: "center",
     gap: 20,
   },
-
-  navLabel: {
-    fontSize: 13,
-    color: "#9a9590",
-    fontWeight: 300,
-  },
-
   logoutBtn: {
     padding: "7px 18px",
     borderRadius: 8,
@@ -388,13 +377,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 500,
     cursor: "pointer",
   },
-
   wrap: {
     maxWidth: 680,
     margin: "0 auto",
     padding: "60px 24px",
   },
-
   heading: {
     fontFamily: "'Instrument Serif', serif",
     fontSize: 42,
@@ -403,21 +390,18 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: "-1px",
     marginBottom: 6,
   },
-
   sub: {
     fontSize: 14,
     color: "#9a9590",
     marginBottom: 36,
     fontWeight: 300,
   },
-
   card: {
     background: "#fefefe",
     border: "0.5px solid #e8e4dc",
     borderRadius: 16,
     padding: 32,
   },
-
   label: {
     display: "block",
     fontSize: 11,
@@ -427,7 +411,6 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: "0.5px",
     marginBottom: 8,
   },
-
   textarea: {
     width: "100%",
     padding: 16,
@@ -442,7 +425,6 @@ const styles: Record<string, React.CSSProperties> = {
     outline: "none",
     boxSizing: "border-box",
   },
-
   charCount: {
     fontSize: 12,
     color: "#b0aca6",
@@ -450,26 +432,22 @@ const styles: Record<string, React.CSSProperties> = {
     textAlign: "right",
     fontWeight: 300,
   },
-
   errText: {
     fontSize: 12,
     color: "#c0392b",
     marginTop: 6,
   },
-
   voiceHint: {
     fontSize: 12,
     color: "#b0aca6",
     marginTop: 10,
     fontStyle: "italic",
   },
-
   row: {
     display: "flex",
     gap: 12,
     marginTop: 18,
   },
-
   uploadBtn: {
     flex: 1,
     padding: "11px 16px",
@@ -484,7 +462,6 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 8,
     fontFamily: "'DM Sans', sans-serif",
   },
-
   select: {
     flex: 1,
     padding: "11px 16px",
@@ -496,14 +473,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: "'DM Sans', sans-serif",
     outline: "none",
   },
-
   speedRow: {
     display: "flex",
     alignItems: "center",
     gap: 12,
     marginTop: 18,
   },
-
   speedLabel: {
     fontSize: 11,
     fontWeight: 500,
@@ -512,12 +487,10 @@ const styles: Record<string, React.CSSProperties> = {
     letterSpacing: "0.5px",
     whiteSpace: "nowrap" as const,
   },
-
   slider: {
     flex: 1,
     accentColor: "#c4622d",
   },
-
   speedValue: {
     fontSize: 13,
     fontWeight: 500,
@@ -525,7 +498,6 @@ const styles: Record<string, React.CSSProperties> = {
     minWidth: 32,
     textAlign: "right" as const,
   },
-
   convertBtn: {
     width: "100%",
     marginTop: 20,
@@ -538,7 +510,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: "'DM Sans', sans-serif",
     fontWeight: 500,
   },
-
   player: {
     marginTop: 24,
     background: "#faf9f6",
@@ -546,14 +517,12 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     padding: 20,
   },
-
   playerHeader: {
     display: "flex",
     alignItems: "center",
     gap: 8,
     marginBottom: 16,
   },
-
   playerDot: {
     width: 8,
     height: 8,
@@ -561,13 +530,11 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#4caf50",
     display: "inline-block",
   },
-
   playerLabel: {
     fontSize: 13,
     fontWeight: 500,
     color: "#1a1a1a",
   },
-
   playBtn: {
     width: 50,
     height: 50,
@@ -578,13 +545,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 18,
     color: "#fff",
   },
-  
   userBox: {
     display: "flex",
     alignItems: "center",
     gap: 12,
   },
-  
   avatar: {
     width: 42,
     height: 42,
@@ -597,13 +562,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     fontSize: 18,
   },
-  
   userName: {
     fontSize: 16,
     fontWeight: 600,
     color: "#1a1a1a",
   },
-
   downloadBtn: {
     width: "100%",
     padding: "10px 16px",
@@ -617,7 +580,6 @@ const styles: Record<string, React.CSSProperties> = {
     cursor: "pointer",
     marginTop: 20,
   },
-
 };
 
 export default Converter;
